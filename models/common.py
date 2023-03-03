@@ -288,6 +288,43 @@ class DWConvTranspose2d(nn.ConvTranspose2d):
         super().__init__(c1, c2, k, s, p1, p2, groups=math.gcd(c1, c2))
 
 
+import bsconv.pytorch
+
+
+class BSConv(torch.nn.Module):
+
+    def __init__(self, c1, c2, k=1, s=1, g=1):
+        super().__init__()
+        self.features = torch.nn.Sequential(
+            bsconv.pytorch.BSConvU(3, 32, kernel_size=3, stride=2, padding=1),
+            torch.nn.BatchNorm2d(num_features=32),
+            torch.nn.ReLU(inplace=True),
+            bsconv.pytorch.BSConvU(32, 64, kernel_size=3, stride=2, padding=1),
+            torch.nn.BatchNorm2d(num_features=64),
+            torch.nn.ReLU(inplace=True),
+            bsconv.pytorch.BSConvU(64, 128, kernel_size=3, stride=2, padding=1),
+            torch.nn.BatchNorm2d(num_features=128),
+            torch.nn.ReLU(inplace=True),
+            bsconv.pytorch.BSConvU(128, 256, kernel_size=3, stride=2, padding=1),
+            torch.nn.BatchNorm2d(num_features=256),
+            torch.nn.ReLU(inplace=True),
+            bsconv.pytorch.BSConvU(256, 512, kernel_size=3, stride=2, padding=1),
+            torch.nn.BatchNorm2d(num_features=512),
+            torch.nn.ReLU(inplace=True),
+        )
+        self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
+        # self.classifier = torch.nn.Sequential(
+        #     torch.nn.Linear(512, num_classes),
+        # )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        # x = torch.flatten(x, 1)
+        # x = self.classifier(x)
+        return x
+
+
 class TransformerLayer(nn.Module):
     # Transformer layer https://arxiv.org/abs/2010.11929 (LayerNorm layers removed for better performance)
     def __init__(self, c, num_heads):
